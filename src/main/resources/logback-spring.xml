@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         Pull app name and log directory from Spring environment
+    ─────────────────────────────────────────────────────────────────────── -->
+    <springProperty scope="context" name="APP_NAME"  source="spring.application.name" defaultValue="ticketingsys"/>
+    <springProperty scope="context" name="LOG_DIR"   source="logging.file.path"       defaultValue="logs"/>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         Patterns
+         %clr / %wEx removed — not supported in Logback 1.5+ / Spring Boot 4
+         Use %highlight for console colour, %ex for exceptions
+    ─────────────────────────────────────────────────────────────────────── -->
+    <property name="CONSOLE_PATTERN"
+              value="%highlight(%-5level) %d{yyyy-MM-dd HH:mm:ss.SSS} ${PID:- } --- [%15.15t] %-40.40logger{39} : %m%n%ex"/>
+
+    <property name="FILE_PATTERN"
+              value="%-5level %d{yyyy-MM-dd HH:mm:ss.SSS} ${PID:- } --- [%t] %-40.40logger{39} : %m%n%ex"/>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         CONSOLE appender
+    ─────────────────────────────────────────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         SINGLE ROLLING FILE (INFO + ERROR together)
+    ─────────────────────────────────────────────────────────────────────── -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archived/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         Async wrappers — offload I/O from request threads
+    ─────────────────────────────────────────────────────────────────────── -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>  <!-- never discard, even under load -->
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         Package-level logger tuning
+    ─────────────────────────────────────────────────────────────────────── -->
+    <!-- Our application -->
+    <logger name="com.peramal.ticketingsys" level="INFO"/>
+
+    <!-- Silence noisy frameworks -->
+    <logger name="org.hibernate"                     level="WARN"/>
+    <logger name="org.springframework"               level="WARN"/>
+    <logger name="org.springframework.security"      level="WARN"/>
+    <logger name="com.zaxxer.hikari"                 level="WARN"/>
+    <logger name="io.jsonwebtoken"                   level="WARN"/>
+    <logger name="springdoc"                         level="WARN"/>
+
+    <!-- ───────────────────────────────────────────────────────────────────
+         Profile-aware root logger
+    ─────────────────────────────────────────────────────────────────────── -->
+    <!-- DEV: verbose + console -->
+    <springProfile name="dev">
+        <logger name="com.peramal.ticketingsys"      level="DEBUG"/>
+        <logger name="org.hibernate.SQL"             level="DEBUG"/>
+        <logger name="org.hibernate.orm.jdbc.bind"   level="TRACE"/>
+        <logger name="org.springframework.security"  level="DEBUG"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- PROD: file only, no console -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- Default (no profile): console + file -->
+    <springProfile name="!dev &amp; !prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

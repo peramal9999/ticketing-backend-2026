@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: ticketingsys
+
+  # PostgreSQL
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ticketing_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  # JPA / Hibernate
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false          # SQL logging handled by logback-spring.xml per profile
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Multipart (attachments)
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# App config
+app:
+  jwt:
+    auth-secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    auth-expiration-ms: 14400000                                          # 4 hours
+    refresh-secret: 7A25432A462D4A614E645267556B58703273357638792F423F4528482B4D6251
+    refresh-expiration-ms: 86400000                                 # 24 hours
+  default-password: ChangeMe@123
+  upload:
+    dir: /ticketingsys-storage
+
+# SpringDoc / Swagger UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    version: openapi_3_1
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    filter: true
+
+# Logging
+logging:
+  file:
+    path: logs                          # log directory — override with -Dlogging.file.path=/var/log/ticketingsys in prod
+  config: classpath:logback-spring.xml

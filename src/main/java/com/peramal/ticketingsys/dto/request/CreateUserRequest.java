@@ -1,0 +1,23 @@
+package com.peramal.ticketingsys.dto.request;
+
+import com.peramal.ticketingsys.entity.enums.Role;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+@Data
+public class CreateUserRequest {
+    @NotBlank
+    private String firstName;
+
+    @NotBlank
+    private String lastName;
+
+    @NotBlank
+    @Email
+    private String email;
+
+    @NotNull
+    private Role role;
+}
